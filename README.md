@@ -50,7 +50,17 @@
   </a>
 </div>
 
-<br />
+<div align="center">
+  <h3>
+    Workshop
+    <span>|</span>
+    Packages
+    <span>|</span>
+    <a href="https://github.com/yoshuawuyts/choo/blob/master/.github/CONTRIBUTING.md">
+      Contributing
+    </a>
+  </h3>
+</div>
 
 <div align="center">
   <sub>The little framework that could. Built with ❤︎ by
@@ -60,32 +70,19 @@
   </a>
 </div>
 
-## Table of Contents
-- [Features](#features)
-- [Demos](#demos)
-- [Getting started](#getting-started)
-- [Concepts](#concepts)
-  - [Models](#models)
-  - [Actions](#actions)
-  - [Effects](#effects)
-  - [Subscriptions](#subscriptions)
-  - [Router](#router)
-  - [Views](#views)
-- [Common actions](#common-actions)
-  - [HTTP](#http)
-  - [Server sent events](#server-sent-events-sse)
-  - [Keyboard](#keyboard)
-  - [Websockets](#websockets)
-  - [Forms](#forms)
-  - [Links](#links)
-  - [Rendering in Node](#rendering-in-node)
-- [API](#api)
-- [Errors](#errors)
-- [FAQ](#faq)
-- [Installation](#installation)
-- [Contributing](#contributing)
-- [See Also](#see-also)
-- [License](#license)
+<h2>Table of Contents</h2>
+<details>
+  <summary>Table of Contents</summary>
+  <li><a href="#features">Features</a></li>
+  <li><a href="#demos">Demos</a></li>
+  <li><a href="#example">Example</a></li>
+  <li><a href="#concepts">Concepts</a></li>
+  <li><a href="#api">API</a></li>
+  <li><a href="#errors">Errors</a></li>
+  <li><a href="#faq">FAQ</a></li>
+  <li><a href="#installation">Installation</a></li>
+  <li><a href="#see-also">See Also</a></li>
+</details>
 
 ## Features
 - __minimal size:__ weighing `5kb`, `choo` is a tiny little framework
@@ -115,56 +112,6 @@ production, we'd love to hear from you!_
 Let's create an input box that changes the content of a textbox in real time.
 [Click here to see the final app](http://requirebin.com/?gist=e589473373b3100a6ace29f7bbee3186).
 
-First we import `choo` and create a new instance:
-```js
-const choo = require('choo')
-const html = require('choo/html')
-const app = choo()
-```
-
-Then we define a model. We set an initial value of `state` and a `reducer` that
-can be called to modify it:
-```js
-app.model({
-  state: { title: 'Set the title' },
-  reducers: {
-    update: (action, state) => ({ title: action.value })
-  }
-})
-```
-
-Then we create a new view. It has an `h1` tag which displays the current title,
-and an `<input>` field which sends the current value of the text box on every
-input:
-```js
-const mainView = (params, state, send) => html`
-  <main>
-    <h1>${state.title}</h1>
-    <input
-      type="text"
-      oninput=${(e) => send('update', { value: e.target.value })}>
-  </main>
-`
-```
-
-_Note_: if an `id` property is defined on the outer-most element it will be
-replaced.
-
-We then bind the view to the `/` route on our application
-```js
-app.router((route) => [
-  route('/', mainView)
-])
-```
-
-And then start the app and append it to the DOM. You can now run it and [see it
-in action!](http://requirebin.com/?gist=e589473373b3100a6ace29f7bbee3186)
-```js
-const tree = app.start()
-document.body.appendChild(tree)
-```
-
-And all together now:
 ```js
 const choo = require('choo')
 const html = require('choo/html')
@@ -349,287 +296,6 @@ const view = (params, state, send) => {
 ```
 In this example, when the `Add` button is clicked, the view will dispatch an `add` action that the model’s `add` reducer will receive. [As seen above](#models), the reducer will add an item to the state’s `todos` array. The state change will cause this view to be run again with the new state, and the resulting DOM tree will be used to [efficiently patch the DOM](#does-choo-use-a-virtual-dom).
 
-## Common Actions
-### HTTP
-`choo` ships with a built-in [`http` module](https://github.com/Raynos/xhr)
-that weighs only `2.4kb`:
-```js
-const http = require('choo/http')
-const choo = require('choo')
-const app = choo()
-
-app.model({
-  effects: {
-    'app:error': (state, event) => console.error(`error: ${event.payload}`),
-    'app:print': (state, event) => console.log(`http: ${event.payload}`),
-    'http:get_json': getJson,
-    'http:post_json': postJson,
-    'http:delete': httpDelete
-  }
-})
-
-function getJson (state, action, send) {
-  http.get('/my-endpoint', { json: true }, function (err, res, body) {
-    if (err) return send('app:error', { payload: err.message })
-    if (res.statusCode !== 200 || !body) {
-      return send('app:error', { payload:'something went wrong' })
-    }
-    send('app:print', { payload: body })
-  })
-}
-
-function postJson (state, action, send) {
-  const body = { foo: 'bar' }
-  http.post('/my-endpoint', { json: body }, function (err, res, body) {
-    if (err) return send('app:error', { payload: err.message })
-    if (res.statusCode !== 200 || !body) {
-      return send('app:error', { payload:'something went wrong' })
-    }
-    send('app:print', { payload: body })
-  })
-}
-
-function httpDelete (state, action, send) {
-  const body = { foo: 'bar' }
-  http.del('/my-endpoint', { json: body }, function (err, res, body) {
-    if (err) return send('app:error', { payload: err.message })
-    if (res.statusCode !== 200) {
-      return send('app:error', { payload:'something went wrong' })
-    }
-  })
-}
-```
-Note that `http` only runs in the browser to prevent accidental requests when
-rendering in Node. For more details view the [`raynos/xhr`
-documentation](https://github.com/Raynos/xhr).
-
-### Server Sent Events (SSE)
-[Server Sent Events (SSE)][sse] allow servers to push data to the browser.
-They're the unidirectional cousin of `websockets` and compliment `HTTP`
-brilliantly. To enable `SSE`, create a new `EventSource`, point it at a local
-uri (generally `/sse`) and setup a `subscription`:
-```js
-const stream = new document.EventSource('/sse')
-
-app.model({
-  subscriptions: [
-    function (send) {
-      stream.onerror = (e) => send('app:error', { payload: JSON.stringify(e) })
-      stream.onmessage = (e) => send('app:print', { payload: e.data })
-    }
-  ],
-  effects: {
-    'sse:close': () => stream.close(),
-    'app:error': (state, event) => console.error(`error: ${event.payload}`),
-    'app:print': (state, event) => console.log(`sse: ${event.payload}`)
-  }
-})
-```
-This code does not handle reconnects, server timeouts, exponential backoff and
-queueing data. You might want to use a package from `npm` or [write your
-own][sse-reconnect] if you're building something for production.
-
-### Keyboard
-Most browsers have [basic support for keyboard events][keyboard-support]. To
-capture keyboard events, setup a `subscription`:
-```js
-app.model({
-  namespace: 'input',
-  subscriptions: [
-    function (send) {
-      document.addEventListener(
-        'keypress',
-        (e) => send('input:print', { payload: e.keyCode })
-      )
-    }
-  ],
-  effects: {
-    print: (state) => console.log(`pressed key: ${state.payload}`)
-  }
-})
-```
-
-### WebSockets
-[WebSockets][ws] allow for bidirectional communication between servers and
-browsers:
-```js
-const socket = new document.WebSocket('ws://localhost:8081')
-
-app.model({
-  subscriptions: [
-    function (send) {
-      socket.onerror = (e) => send('app:error', { payload: JSON.stringify(e) })
-      socket.onmessage = (e) => send('app:print', { payload: e.data })
-    }
-  ],
-  effects: {
-    'ws:close': () => socket.close(),
-    'ws:send': (state, event) => socket.send(JSON.stringify(event.payload)),
-    'app:error': (state, event) => console.error(`error: ${event.payload}`),
-    'app:print': (state, event) => console.log(`ws: ${event.payload}`)
-  }
-})
-```
-This code does not handle reconnects, server timeouts, exponential backoff and
-queueing data. You might want to use a package from `npm` or [write your
-own][ws-reconnect] if you're building something for production.
-
-### Forms
-Forms and lists are probably the most used concepts on any page. Together with
-links they comprise most of what can be done on web pages.
-```js
-const choo = require('choo')
-const http = require('choo/http')
-const html = require('choo/html')
-const app = choo()
-
-function view (params, state, send) {
-  return html`
-    <form onsubmit=${onSubmit}>
-      <fieldset>
-        <label>username</label>
-        <input type="text" name="username" autofocus>
-      </fieldset>
-      <fieldset>
-        <label>password</label>
-        <input type="password" name="password">
-      </fieldset>
-      <input type="submit" value="Submit">
-    </form>
-  `
-
-  function onSubmit (event) {
-    send('login', { data: new FormData(event.target) })
-    event.preventDefault()
-  }
-}
-
-app.model({
-  effects: {
-    login: (action, state, send) => {
-      http.post('/login', { body: action.data }, (err, res, body) => {
-        send('authorize', { payload: body })
-      })
-    }
-  }
-})
-
-app.router((route) => [
-  route('/', view)
-])
-
-app.start()
-```
-
-If you want a form element to be selected when it's loaded, add the
-[`autofocus`][html-input] property.
-```js
-const view = html`
-  <form>
-    <input type="text" autofocus>
-  </form>
-`
-```
-
-### Links
-In HTML links are represented with the `<a href="/some-location">` tag. By
-default `choo` enables a `subscription` for all `a` tags on a page. When a link
-is clicked, the click event is caught, and the value of `href` is passed into
-the router causing a state change. If you want to disable this behavior, set
-`app.start({ href: false })`.
-```js
-const nav = html`
-  <a href="/">home</a>
-  <a href="/first-link">first link</a>
-  <a href="/second-link">second link</a>
-`
-```
-
-### Rendering in Node
-Sometimes it's necessary to render code inside of Node; for serving hyper fast
-first requests, testing or other purposes. Applications that are capable of
-being rendered in both Node and the browser are called
-_[isomorphic][isomorphic]_.
-
-Rendering in Node is slightly different than in the browser. First off, to
-maintain performance all calls to `subscriptions`, `effects`, and `reducers`
-are disabled. That means you need to know what the state of your application is
-going to be _before_ you render it - no cheating!
-
-Secondly, the `send()` method inside `router` and `view` has been disabled. If
-you call it your program will crash. Disabling all these things means that your
-program will render [`O(n)`][big-o], which is super neat. Off to [10.000
-QPS][qps] we go!
-
-To render in Node call the `.toString()` method instead of `.start()`. The
-first argument is the path that should be rendered, the second is the state:
-```js
-const http = require('http')
-const client = require('./client')  // path to client entry point
-http.createServer(function (req, res) {
-  const html = client.toString('/', { message: 'hello server!' })
-  res.setHeader('Content-Type', 'text/html; charset=utf-8')
-  res.end(html)
-})
-```
-
-In order to make our `choo` app call `app.start()` in the browser and be
-`require()`-able in Node, we check if [`module.parent`][module-parent] exists:
-```js
-const choo = require('choo')
-const html = require('choo/html')
-const app = choo()
-
-app.router((route) => [
-  route('/', (params, state, send) => html`
-    <h1>${state.message}</h1>
-  `)
-])
-
-if (module.parent) module.exports = app
-else document.body.appendChild(app.start())
-```
-
-#### Rehydration
-Now that your application is successfully rendering in Node, the next step would
-be to make it load a JavaScript bundle once has loaded the HTML. To do this we
-will use a technique called _rehydration_.
-
-_Rehydration_ is when you take the static, server-rendered version of your
-application (static HTML, _dehydrated_ because it has no logic) and _rehydrate_
-it by booting up the JS and attaching event handlers on the DOM to make it
-dynamic again. It's like restoring flavor to cup noodles by adding hot water.
-
-Because we're using something called `morphdom` under the hood, all we need is
-point at an `id` at the root of the application. The syntax for this is
-slightly different from what we've seen so far, because we're _updating_ a
-dehydrated DOM nodes to make them dynamic, rather than a new DOM tree and
-attaching it to the DOM.
-```js
-const choo = require('choo')
-const html = require('choo/html')
-const app = choo()
-
-app.router((route) => [
-  route('/', (params, state, send) => html`
-    <h1 id="app-root">${state.message}</h1>
-  `)
-])
-
-if (module.parent) module.exports = app
-else app.start('#app-root'))
-```
-
-When the JS is booted on top of the dehydrated application, it will look for
-the `#app-root` id and load on top of it. You can choose any name you like for
-the id, but __make sure it's the same on every possible top level DOM node__,
-or else things might break. Furthermore to ensure things go smoothly, try and
-keep the initial state identical on both the server and the client.
-
-And that's it! If you want to go down the route of mad performance, consider
-make all first request static and caching them using something like [bl][bl],
-[nginx][nginx], [varnish][varnish] or a global CDN.
-
 ## API
 ### app = choo()
 Create a new `choo` app
@@ -653,7 +319,7 @@ Creates a new router. See
 documentation. Registered views have a signature of `(params, state, send)`,
 where `params` is URI partials.
 
-### html = app.toString(route, state)
+### html = app.toString(route, state?)
 Render the application to a string of HTML. Useful for rendering on the server.
 First argument is a path that's passed to the router. Second argument is the
 state object. When calling `.toString()` instead of `.start()`, all calls to
@@ -681,22 +347,6 @@ following values:
 Tagged template string HTML builder. See
 [`yo-yo`](https://github.com/maxogden/yo-yo) for full documentation. Views
 should be passed to `app.router()`
-
-## Errors
-### Could not find DOM node (#id) to update
-This means that a re-render of the DOM was triggered before the first render
-was done. This is usually the case when `send()` is called inside a
-`subscription` before the DOM is done rendering. Instead try listening for a
-`'DOMContentLoaded'` event:
-```js
-document.addEventListener('DOMContentLoaded', (e) => send('init'))
-```
-
-### send() cannot be called on the server
-This means a `send()` event was triggered in Node. In Node, `reducers`,
-`effects` and `subscriptions` are disabled for performance reasons, so if
-`send()` was called to trigger an action it wouldn't work. Try finding where in
-the DOM tree `send()` is called, and disable it when called from within Node.
 
 ## FAQ
 ### Why did you build this?
@@ -768,9 +418,16 @@ give you my opinions directly. Ready?  Here goes:
   provides framework lock in, and additionally doesn't have a clean enough
   architecture. I appreciate what it does, but don't think it's the answer.
 
+### Why can't send() be called on the server?
+In Node, `reducers`, `effects` and `subscriptions` are disabled for performance
+reasons, so if `send()` was called to trigger an action it wouldn't work. Try
+finding where in the DOM tree `send()` is called, and disable it when called
+from within Node.
+
 ### Which packages was choo built on?
-- __views:__ [`yo-yo`](https://github.com/maxogden/yo-yo)
-- __models:__ [`send-action`](https://github.com/sethvincent/send-action),
+- __views:__ [`yo-yo`](https://github.com/maxogden/yo-yo),
+  [`bel`](https://github.com/shama/bel)
+- __models:__ [`barracks`](https://github.com/yoshuawuyts/barracks),
   [`xtend`](https://github.com/raynos/xtend)
 - __routes:__ [`sheet-router`](https://github.com/yoshuawuyts/sheet-router)
 - __http:__ [`xhr`](https://github.com/Raynos/xhr)
@@ -781,13 +438,6 @@ nodes. It turns out that [browsers are actually ridiculously good at dealing
 with DOM nodes][morphdom-bench], and it has the added benefit of working with
 _any_ library that produces valid DOM nodes. So to put a long answer short:
 we're using something even better.
-
-### What packages do you recommend to pair with choo?
-- [tachyons](https://github.com/tachyons-css/tachyons) - functional CSS for
-  humans
-- [sheetify](https://github.com/stackcss/sheetify) - modular CSS bundler for
-  browserify
-- [pull-stream](https://github.com/pull-stream/pull-stream) - minimal streams
 
 ### How can I optimize choo?
 `choo` really shines when coupled with `browserify` transforms. They can do
@@ -850,13 +500,6 @@ Sure.
 $ npm install choo
 ```
 
-## Contributing
-Browser tests can be run with the right credentials via the `npm run test:browser`
-command.  This will be run automatically when `npm version` is executed.
-
-You may skip the tests by providing `SKIP_TEST=true` when running the version
-command.
-
 ## See Also
 - [budo](https://github.com/mattdesl/budo) - quick prototyping tool for
   `browserify`
@@ -864,6 +507,11 @@ command.
 - [yo-yo](https://github.com/maxogden/yo-yo) - tiny library for modular UI
 - [bel](https://github.com/shama/bel) - composable DOM elements using template
   strings
+- [tachyons](https://github.com/tachyons-css/tachyons) - functional CSS for
+  humans
+- [sheetify](https://github.com/stackcss/sheetify) - modular CSS bundler for
+  browserify
+- [pull-stream](https://github.com/pull-stream/pull-stream) - minimal streams
 
 ## License
 [MIT](https://tldrlegal.com/license/mit-license)
